@@ -38,40 +38,51 @@ router.get("/:id", async (req, res) => {
 });
 router.post("/", authMiddleware, async (req, res) => {
   try {
-    const itemsArray = [];
-    const arr = req.body;
-    arr.forEach(element => {
-        const { item, amount } = element
-        if (!item || !amount) {
-            return res.status(400).json({
-                success: false,
-                error: "Wrong body format: missing fields",
-            });
-        }
-        if (typeof amount !== "number") {
-            return res.status(400).json({
-                success: false,
-                error: "Wrong body format: incorrect types",
-            });
-        }
-        const newItemEntry = toNewEntry(element);
-        const newItem: Item_ShoppingList = {
-        item: newItemEntry,
-        amount,
-        };
-        itemsArray.push(newItem)
-    
-    });
-    const newList: ShoppingList = {
-        id: uuidv4(),
-        items:itemsArray,
-        createdDate: new Date(),
-        dueDate: new Date(),//TODO:Change this
+    const listArray = [];
+    const arr = req.body.list;
+    const date = req.body.list[1];
+    if(arr){
+        arr.forEach((element: { List: any; amount: any; }) => {
+            //console.log(element)
+            const { List, amount } = element
+            //console.log(List,amount)
+            if (!List || !amount) {
+                return res.status(400).json({
+                    success: false,
+                    error: "Wrong body format: missing fields",
+                });
+            }
+            if (typeof amount !== "number") {
+                return res.status(400).json({
+                    success: false,
+                    error: "Wrong body format: incorrect types",
+                });
+            }
+            const newListEntry = toNewEntry(List);
+            const newList: Item_ShoppingList = {
+            item: newListEntry,
+            amount,
+            };
+        return listArray.push(newList)
+        
+        });
+        const newList: ShoppingList = {
+            id: uuidv4(),
+            items:listArray,
+            createdDate: new Date(),
+            dueDate: date!= undefined ? date : new Date(),
 
+        }
+
+        await listHandler.save(newList);
+        return res.json({ success: true, result: newList });
     }
-
-    await listHandler.save(newList);
-    return res.json({ success: true, result: newList });
+    else{
+        return res.status(500).json({
+            success: false,
+            error: "Empty body",
+        });
+    }
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -79,4 +90,109 @@ router.post("/", authMiddleware, async (req, res) => {
     });
   }
 });
+
+router.put('/:id', authMiddleware, async (req, res) => {
+    try {
+      const {
+        params: { id,},
+        body: { items, dueDate }
+      } = req
+  
+      if (!items) {
+        return res.status(400).json({
+          success: false,
+          error: 'Wrong body format: missing fields'
+        })
+      }
+    //TODO:check if item is an item 
+    //   if (typeof) {
+    //     return res.status(400).json({
+    //       success: false,
+    //       error: 'Wrong body format: incorrect types'
+    //     })
+    //   }
+  
+      const List = await listHandler.getById(id)
+  
+      const ListUpdated: ShoppingList = { 
+        ...List,
+        items,
+        dueDate
+      }
+      const updateByIdResult = await listHandler.updateById(ListUpdated)
+  
+      if (updateByIdResult === -1) {
+        return res.status(404).json({
+          success: false,
+          error: `List with id ${id} does not exist`
+        })
+      } else {
+        return res.json({ success: true, result: ListUpdated })
+      }
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: 'An error has ocurred updating the List'
+      })
+    }
+  })
+  router.delete('/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params
+      const deleteByIdResult = await listHandler.deleteById(id)
+  
+      if (deleteByIdResult === -1) {
+        return res.status(404).json({
+          success: false,
+          error: `List with id ${id} does not exist`
+        })
+      } else {
+        return res.json({
+          success: true,
+          result: `List with id ${id} deleted`
+        })
+      }
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: 'An error has ocurred deleting the List'
+      })
+    }
+  })
+  router.post("/:id/items", authMiddleware, async (req, res) => {
+    const {
+        params: { id },
+        body: {  item }
+      } = req
+      const postItem = await listHandler.postItemInList(id,item)
+      if (postItem === -1) {
+        return res.status(404).json({
+          success: false,
+          error: `List with id ${id} does not exist`
+        })
+      } else {
+        return res.json({
+          success: true,
+          result: `Item with id ${id} correctly added`
+        })
+      }
+  });
+
+  router.delete( "/lists/:listId/items/:itemId",authMiddleware,async (req,res) => {
+    const {params:{listId,itemId}} = req
+    const deleteItemInList = await listHandler.deleteItemInList(listId,itemId);
+    if (deleteItemInList === -1) {
+        return res.status(404).json({
+          success: false,
+          error: `List with id ${listId} does not exist`
+        })
+      } else {
+        return res.json({
+          success: true,
+          result: `Item with id ${itemId} correctly added`
+        })
+      }
+  })
+
+
 export default router;
