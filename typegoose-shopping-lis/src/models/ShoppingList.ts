@@ -1,18 +1,13 @@
-import {
-  DocumentType,
-  getModelForClass,
-  prop,
-  Ref,
-  ReturnModelType,
-  pre,
-} from "@typegoose/typegoose";
-import { Item_ShoppingList } from "./Item_ShoppingList";
+import { getModelForClass, prop, Ref } from "@typegoose/typegoose";
+import Item_ShoppingListModel from "./Item_ShoppingList";
 
-export class ShoppingList {
-  @prop({ required: true })
+class ShoppingList {
+  @prop({ required: false })
   createdDate: Date;
-  @prop({ required: true })
+  @prop({ required: false })
   dueDate: Date;
   @prop({ required: true })
-  items: Ref<Item_ShoppingList>[];
+  items: Ref<typeof Item_ShoppingListModel>[];
 }
+const ShoppingListModel = getModelForClass(ShoppingList);
+export default ShoppingListModel;

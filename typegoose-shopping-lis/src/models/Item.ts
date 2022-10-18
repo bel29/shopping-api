@@ -1,11 +1,4 @@
-import {
-  DocumentType,
-  getModelForClass,
-  prop,
-  Ref,
-  ReturnModelType,
-  pre,
-} from "@typegoose/typegoose";
+import { getModelForClass, prop } from "@typegoose/typegoose";
 
 class Item {
   @prop({ required: true })
@@ -15,7 +8,6 @@ class Item {
   @prop({ required: true })
   cost: number;
 }
-
 
 const ItemModel = getModelForClass(Item);
 export default ItemModel;
